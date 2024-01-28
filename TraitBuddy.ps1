@@ -1,5 +1,4 @@
 ## READ THIS: Oh no! You wanted to jump in and there is a huge wall of text. Search for "intereresting stuff start here" to get to the good bits
-$account = "@robertlabrie"
 $REGION = 'NA'
 
 # crafting type consts
@@ -57,7 +56,7 @@ $ITEM_TRAIT_TYPE_WEAPON_TRAINING = 6
 $ITEM_TRAIT_TYPE_WEAPON_WEIGHTED = 8
 $item_trait_descriptions = @{
     $ITEM_TRAIT_TYPE_ARMOR_DIVINES = "Divines"
-    $ITEM_TRAIT_TYPE_ARMOR_EXPLORATION = "Exploration" # invigorating
+    $ITEM_TRAIT_TYPE_ARMOR_EXPLORATION = "Invigorating" # aka Exploration
     $ITEM_TRAIT_TYPE_ARMOR_IMPENETRABLE = "Impenetrable"
     $ITEM_TRAIT_TYPE_ARMOR_INFUSED = "Infused"
     $ITEM_TRAIT_TYPE_ARMOR_INTRICATE = "Intricate"
@@ -93,24 +92,7 @@ $item_trait_descriptions = @{
     # $ITEM_TRAIT_TYPE_WEAPON_WEIGHTED = "Weighted"
 
 }
-function Get-JewelryTraitIdByIndex
-{
-    param (
-        [Int] $traitId
-    )
-    $map = @{
-        1 = 22
-        2 = 21
-        3 = 23
-        4 = 30
-        5 = 33
-        6 = 32
-        7 = 28
-        8 = 29
-        9 = 31
-    }
-    return $map[$traitId]
-}
+
 function Get-ItemTraitIdByIndex
 {
     param (
@@ -159,16 +141,6 @@ function Get-ItemTraitIdByIndex
     return $out
 }
 
-function Get-ItemTraitDescription
-{
-    param (
-        [Int] $craftingType,
-        [Int] $researchLine,
-        [Int] $traitId
-    )
-
-
-}
 # research line constants
 # clothing
 $RESEARCH_LINE_LIGHT_CHEST = 1 # robe & jerkin
@@ -266,15 +238,6 @@ $research_line_descriptions = @{
 }
 
 
-
-
-# "interesting stuff starts here"
-Add-Type -Path "$($pwd.Path)\KeraLua.dll"
-Add-Type -Path "$($pwd.Path)\NLua.dll"
-
-$lua = [NLua.Lua]::new()
-$lua.DoFile("C:\$($env:HOMEPATH)\Documents\Elder Scrolls Online\live\SavedVariables\TraitBuddy.lua")
-
 function Get-EmptyResultTable()
 {
     $out = @{1=@{}}
@@ -308,33 +271,39 @@ function Get-EmptyResultTable()
     return $out
 }
 
+# "interesting stuff starts here"
+Add-Type -Path "$($pwd.Path)\KeraLua.dll"
+Add-Type -Path "$($pwd.Path)\NLua.dll"
+
+$lua = [NLua.Lua]::new()
+$lua.DoFile("C:\$($env:HOMEPATH)\Documents\Elder Scrolls Online\live\SavedVariables\TraitBuddy.lua")
+
 $res = Get-EmptyResultTable
-
-$characters = $lua['TraitBuddySettings'][$REGION][$account]['$AccountWide']['characters'].Keys
-foreach ($id in $characters)
+foreach ($account in $lua['TraitBuddySettings'][$REGION].Keys)
 {
-    $character = $lua['TraitBuddySettings'][$REGION][$account]['$AccountWide']['characters'][$id]
-    $name =  $character['name']
-
-    foreach ($crafting_type in $character['research'].Keys)
+    $characters = $lua['TraitBuddySettings'][$REGION][$account]['$AccountWide']['characters'].Keys
+    foreach ($id in $characters)
     {
-        foreach ($research_line in $character['research'][$crafting_type].Keys)
+        $character = $lua['TraitBuddySettings'][$REGION][$account]['$AccountWide']['characters'][$id]
+        $name =  $character['name']
+
+        foreach ($crafting_type in $character['research'].Keys)
         {
-            foreach ($trait in $character['research'][$crafting_type][$research_line].Keys)
+            foreach ($research_line in $character['research'][$crafting_type].Keys)
             {
-                # write-host "crafting_type=$crafting_type $($crafting_type.GetType()) research_line=$research_line $($research_line.GetType()) trait=$trait $($trait.GetType())"
-                $status = $character['research'][$crafting_type][$research_line][$trait]
-                # if status is true its done, and if it's a lua table its researching and for our purposes that's the same thing
-                if ($status -ne $false)
-                { 
-                    $res[[int]$crafting_type][[int]$research_line][[int]$trait]++ 
-                    # Write-Host $res[[int]$crafting_type]
+                foreach ($trait in $character['research'][$crafting_type][$research_line].Keys)
+                {
+                    $status = $character['research'][$crafting_type][$research_line][$trait]
+                    # if status is true its done, and if it's a lua table its researching and for our purposes that's the same thing
+                    if ($status -ne $false)
+                    { 
+                        $res[[int]$crafting_type][[int]$research_line][[int]$trait]++ 
+                    }
                 }
             }
         }
     }
 }
-
 foreach ($crafting_type in $res.Keys)
 {
     foreach ($research_line in $res[$crafting_type].Keys)
